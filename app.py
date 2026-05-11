@@ -95,17 +95,16 @@ def load_excel_data():
                 df = pd.read_excel(xl, sheet_name=sheet, skiprows=7)
                 
                 if len(df.columns) >= 10:
-                    # Column indices based on your structure
-                    overall_rank_col = df.columns[0]  # Column A - Overall Rank
-                    name_col = df.columns[1]           # Column B - Student Name
-                    roll_col = df.columns[2]           # Column C - Roll No
-                    phy_col = df.columns[3]            # Column D - Physics Marks
-                    phy_rank_col = df.columns[4]       # Column E - Physics Rank
-                    chem_col = df.columns[5]           # Column F - Chemistry Marks
-                    chem_rank_col = df.columns[6]      # Column G - Chemistry Rank
-                    math_col = df.columns[7]           # Column H - Maths Marks
-                    math_rank_col = df.columns[8]      # Column I - Maths Rank
-                    total_col = df.columns[9]          # Column J - Total Marks
+                    overall_rank_col = df.columns[0]
+                    name_col = df.columns[1]
+                    roll_col = df.columns[2]
+                    phy_col = df.columns[3]
+                    phy_rank_col = df.columns[4]
+                    chem_col = df.columns[5]
+                    chem_rank_col = df.columns[6]
+                    math_col = df.columns[7]
+                    math_rank_col = df.columns[8]
+                    total_col = df.columns[9]
                     
                     for _, row in df.iterrows():
                         if pd.isna(row[name_col]) and pd.isna(row[roll_col]):
@@ -167,15 +166,9 @@ with st.spinner("🔄 Loading student data..."):
 if all_student_data and len(all_student_data) > 0:
     st.success(f"✅ Loaded {len(all_student_data)} students and {len(test_metadata)} tests!")
     
-    # Search/filter for student
+    # Simple student select box (no search)
     student_options = sorted(all_student_data.keys())
-    search_term = st.text_input("🔍 Search Student", "")
-    
-    if search_term:
-        filtered_options = [s for s in student_options if search_term.upper() in s.upper()]
-        selected_student = st.selectbox("🎓 Select Student", filtered_options)
-    else:
-        selected_student = st.selectbox("🎓 Select Student", student_options)
+    selected_student = st.selectbox("🎓 Select Student", student_options)
     
     if selected_student:
         student = all_student_data[selected_student]
@@ -196,10 +189,8 @@ if all_student_data and len(all_student_data) > 0:
             marks = student["tests"][sheet]
             pct = round((marks["total"] / meta["max_total"]) * 100, 1)
             
-            # Get overall rank from the sheet
             overall_rank = marks.get("overall_rank")
             
-            # Calculate rank based on percentage if not available
             if overall_rank is None or pd.isna(overall_rank):
                 all_scores = []
                 for s_data in all_student_data.values():
@@ -209,7 +200,6 @@ if all_student_data and len(all_student_data) > 0:
             else:
                 overall_rank = int(overall_rank)
             
-            # Track ranks for best/worst analysis
             all_overall_ranks.append(overall_rank)
             if marks.get("phy_rank") is not None and not pd.isna(marks.get("phy_rank")):
                 all_phy_ranks.append(int(marks.get("phy_rank")))
@@ -218,10 +208,8 @@ if all_student_data and len(all_student_data) > 0:
             if marks.get("math_rank") is not None and not pd.isna(marks.get("math_rank")):
                 all_math_ranks.append(int(marks.get("math_rank")))
             
-            # Calculate weakest subject
             weakest = get_weakest_subject(marks.get("phy_rank"), marks.get("chem_rank"), marks.get("math_rank"))
             
-            # Calculate percentages
             phy_pct = round((marks["phy"] / meta["max_phy"]) * 100, 1) if marks["phy"] > 0 else 0
             chem_pct = round((marks["chem"] / meta["max_chem"]) * 100, 1) if marks["chem"] > 0 else 0
             math_pct = round((marks["math"] / meta["max_math"]) * 100, 1) if marks["math"] > 0 else 0
@@ -259,7 +247,6 @@ if all_student_data and len(all_student_data) > 0:
             all_tests = btest_results + brtest_results
             avg_pct = round(np.mean([float(t["%"].replace("%", "")) for t in all_tests]), 1)
             
-            # Calculate best and worst ranks
             best_overall_rank = min(all_overall_ranks) if all_overall_ranks else 'N/A'
             worst_overall_rank = max(all_overall_ranks) if all_overall_ranks else 'N/A'
             best_phy_rank = min(all_phy_ranks) if all_phy_ranks else 'N/A'
@@ -271,7 +258,6 @@ if all_student_data and len(all_student_data) > 0:
             
             roll_numbers_display = ", ".join([str(r) for r in sorted(student["roll_numbers"])])
             
-            # Weak subjects summary
             weak_subjects = [t["Weakest Subject"] for t in all_tests if t["Weakest Subject"] not in ["Balanced", "Absent"]]
             weak_count = Counter(weak_subjects)
             
@@ -361,7 +347,7 @@ if all_student_data and len(all_student_data) > 0:
             st.markdown("---")
             
             # ====================================================
-            # SUBJECT MARKS TRENDS
+            # SUBJECT MARKS TRENDS - BTEST
             # ====================================================
             if btest_results:
                 st.subheader("📊 Subject Marks Trends - BTEST Tests")
@@ -379,46 +365,135 @@ if all_student_data and len(all_student_data) > 0:
                                                 mode='lines+markers', name='Mathematics', 
                                                 line=dict(color='#F1C40F', width=2), marker=dict(size=8)))
                 fig_marks.add_hline(y=75, line_dash="dash", line_color="green", annotation_text="75% Target")
-                fig_marks.update_layout(title="Subject Marks Comparison", height=400)
+                fig_marks.update_layout(title="Subject Marks Comparison (BTEST)", height=400)
                 st.plotly_chart(fig_marks, use_container_width=True)
             
             # ====================================================
-            # SUBJECT RANK TRENDS
+            # SUBJECT RANK TRENDS - BTEST (Separate)
             # ====================================================
             if btest_results:
                 st.subheader("🏆 Subject Rank Trends - BTEST Tests (Lower is Better)")
                 
-                fig_ranks = go.Figure()
-                phy_ranks_clean = [t['Phy Rank'] for t in btest_results if t['Phy Rank'] != '-']
-                chem_ranks_clean = [t['Chem Rank'] for t in btest_results if t['Chem Rank'] != '-']
-                math_ranks_clean = [t['Math Rank'] for t in btest_results if t['Math Rank'] != '-']
+                fig_ranks_btest = go.Figure()
                 
-                if phy_ranks_clean:
-                    fig_ranks.add_trace(go.Scatter(x=btest_names[:len(phy_ranks_clean)], y=phy_ranks_clean, 
-                                                    mode='lines+markers', name='Physics Rank',
-                                                    line=dict(color='#3498DB', width=2)))
-                if chem_ranks_clean:
-                    fig_ranks.add_trace(go.Scatter(x=btest_names[:len(chem_ranks_clean)], y=chem_ranks_clean, 
-                                                    mode='lines+markers', name='Chemistry Rank',
-                                                    line=dict(color='#9B59B6', width=2)))
-                if math_ranks_clean:
-                    fig_ranks.add_trace(go.Scatter(x=btest_names[:len(math_ranks_clean)], y=math_ranks_clean, 
-                                                    mode='lines+markers', name='Mathematics Rank',
-                                                    line=dict(color='#F1C40F', width=2)))
+                btest_names_rank = [t['Test Name'][:20] for t in btest_results]
+                phy_ranks = [t['Phy Rank'] if t['Phy Rank'] != '-' else None for t in btest_results]
+                chem_ranks = [t['Chem Rank'] if t['Chem Rank'] != '-' else None for t in btest_results]
+                math_ranks = [t['Math Rank'] if t['Math Rank'] != '-' else None for t in btest_results]
                 
-                fig_ranks.update_layout(title="Subject Rank Comparison", yaxis=dict(autorange="reversed"), height=400)
-                st.plotly_chart(fig_ranks, use_container_width=True)
+                fig_ranks_btest.add_trace(go.Scatter(x=btest_names_rank, y=phy_ranks, 
+                                                      mode='lines+markers', name='Physics Rank',
+                                                      line=dict(color='#3498DB', width=2), marker=dict(size=8)))
+                fig_ranks_btest.add_trace(go.Scatter(x=btest_names_rank, y=chem_ranks, 
+                                                      mode='lines+markers', name='Chemistry Rank',
+                                                      line=dict(color='#9B59B6', width=2), marker=dict(size=8)))
+                fig_ranks_btest.add_trace(go.Scatter(x=btest_names_rank, y=math_ranks, 
+                                                      mode='lines+markers', name='Mathematics Rank',
+                                                      line=dict(color='#F1C40F', width=2), marker=dict(size=8)))
+                
+                fig_ranks_btest.update_layout(title="Subject Rank Comparison (BTEST)", 
+                                              yaxis=dict(autorange="reversed"), height=400)
+                st.plotly_chart(fig_ranks_btest, use_container_width=True)
             
             # ====================================================
-            # OVERALL PERFORMANCE TREND
+            # OVERALL RANK TREND - BTEST (Separate)
             # ====================================================
-            st.subheader("📈 Overall Performance Trend")
+            if btest_results:
+                st.subheader("🏆 Overall Rank Trend - BTEST Tests (Lower is Better)")
+                
+                fig_rank_btest = go.Figure()
+                btest_overall_ranks = [t['Overall Rank'] for t in btest_results]
+                
+                fig_rank_btest.add_trace(go.Scatter(x=btest_names_rank, y=btest_overall_ranks,
+                                                     mode='lines+markers', name='Overall Rank',
+                                                     line=dict(color='#FF6B6B', width=3), marker=dict(size=10)))
+                best_btest_rank = min(btest_overall_ranks) if btest_overall_ranks else None
+                if best_btest_rank:
+                    fig_rank_btest.add_hline(y=best_btest_rank, line_dash="dash", line_color="green", 
+                                            annotation_text=f"Best: {best_btest_rank}")
+                
+                fig_rank_btest.update_layout(title="Overall Rank Performance (BTEST)", 
+                                             yaxis=dict(autorange="reversed"), height=400)
+                st.plotly_chart(fig_rank_btest, use_container_width=True)
+            
+            # ====================================================
+            # SUBJECT MARKS TRENDS - BRTEST
+            # ====================================================
+            if brtest_results:
+                st.subheader("📊 Subject Marks Trends - BRTEST Tests (CET Format)")
+                
+                brtest_names = [t['Test Name'][:20] for t in brtest_results]
+                
+                fig_marks_brtest = go.Figure()
+                fig_marks_brtest.add_trace(go.Scatter(x=brtest_names, y=[t['Physics'] for t in brtest_results], 
+                                                       mode='lines+markers', name='Physics (max 50)', 
+                                                       line=dict(color='#3498DB', width=2), marker=dict(size=8)))
+                fig_marks_brtest.add_trace(go.Scatter(x=brtest_names, y=[t['Chemistry'] for t in brtest_results], 
+                                                       mode='lines+markers', name='Chemistry (max 50)', 
+                                                       line=dict(color='#9B59B6', width=2), marker=dict(size=8)))
+                fig_marks_brtest.add_trace(go.Scatter(x=brtest_names, y=[t['Maths'] for t in brtest_results], 
+                                                       mode='lines+markers', name='Mathematics (max 100)', 
+                                                       line=dict(color='#F1C40F', width=2), marker=dict(size=8)))
+                fig_marks_brtest.update_layout(title="Subject Marks Comparison (BRTEST - CET Format)", height=400)
+                st.plotly_chart(fig_marks_brtest, use_container_width=True)
+            
+            # ====================================================
+            # SUBJECT RANK TRENDS - BRTEST (Separate)
+            # ====================================================
+            if brtest_results:
+                st.subheader("🏆 Subject Rank Trends - BRTEST Tests (Lower is Better)")
+                
+                fig_ranks_brtest = go.Figure()
+                
+                brtest_names_rank = [t['Test Name'][:20] for t in brtest_results]
+                phy_ranks_br = [t['Phy Rank'] if t['Phy Rank'] != '-' else None for t in brtest_results]
+                chem_ranks_br = [t['Chem Rank'] if t['Chem Rank'] != '-' else None for t in brtest_results]
+                math_ranks_br = [t['Math Rank'] if t['Math Rank'] != '-' else None for t in brtest_results]
+                
+                fig_ranks_brtest.add_trace(go.Scatter(x=brtest_names_rank, y=phy_ranks_br, 
+                                                       mode='lines+markers', name='Physics Rank',
+                                                       line=dict(color='#3498DB', width=2), marker=dict(size=8)))
+                fig_ranks_brtest.add_trace(go.Scatter(x=brtest_names_rank, y=chem_ranks_br, 
+                                                       mode='lines+markers', name='Chemistry Rank',
+                                                       line=dict(color='#9B59B6', width=2), marker=dict(size=8)))
+                fig_ranks_brtest.add_trace(go.Scatter(x=brtest_names_rank, y=math_ranks_br, 
+                                                       mode='lines+markers', name='Mathematics Rank',
+                                                       line=dict(color='#F1C40F', width=2), marker=dict(size=8)))
+                
+                fig_ranks_brtest.update_layout(title="Subject Rank Comparison (BRTEST)", 
+                                               yaxis=dict(autorange="reversed"), height=400)
+                st.plotly_chart(fig_ranks_brtest, use_container_width=True)
+            
+            # ====================================================
+            # OVERALL RANK TREND - BRTEST (Separate)
+            # ====================================================
+            if brtest_results:
+                st.subheader("🏆 Overall Rank Trend - BRTEST Tests (Lower is Better)")
+                
+                fig_rank_brtest = go.Figure()
+                brtest_overall_ranks = [t['Overall Rank'] for t in brtest_results]
+                
+                fig_rank_brtest.add_trace(go.Scatter(x=brtest_names_rank, y=brtest_overall_ranks,
+                                                      mode='lines+markers', name='Overall Rank',
+                                                      line=dict(color='#FF6B6B', width=3), marker=dict(size=10)))
+                best_brtest_rank = min(brtest_overall_ranks) if brtest_overall_ranks else None
+                if best_brtest_rank:
+                    fig_rank_brtest.add_hline(y=best_brtest_rank, line_dash="dash", line_color="green", 
+                                             annotation_text=f"Best: {best_brtest_rank}")
+                
+                fig_rank_brtest.update_layout(title="Overall Rank Performance (BRTEST)", 
+                                              yaxis=dict(autorange="reversed"), height=400)
+                st.plotly_chart(fig_rank_brtest, use_container_width=True)
+            
+            # ====================================================
+            # OVERALL PERCENTAGE TREND
+            # ====================================================
+            st.subheader("📈 Overall Percentage Trend")
             all_names = [t['Test Name'][:20] for t in all_tests]
             all_pcts = [float(t["%"].replace("%", "")) for t in all_tests]
             
             fig_trend = go.Figure()
             
-            # Separate BTEST and BRTEST
             btest_indices = [i for i, t in enumerate(all_tests) if t['Type'] == 'BTEST']
             brtest_indices = [i for i, t in enumerate(all_tests) if t['Type'] == 'BRTEST']
             
@@ -441,25 +516,6 @@ if all_student_data and len(all_student_data) > 0:
             fig_trend.add_hline(y=75, line_dash="dash", line_color="green", annotation_text="Target (75%)")
             fig_trend.update_layout(title="Percentage Score Across All Tests", height=400)
             st.plotly_chart(fig_trend, use_container_width=True)
-            
-            # ====================================================
-            # OVERALL RANK TREND
-            # ====================================================
-            st.subheader("🏆 Overall Rank Trend (Lower is Better)")
-            
-            fig_rank = go.Figure()
-            fig_rank.add_trace(go.Scatter(
-                x=all_names,
-                y=[t['Overall Rank'] for t in all_tests],
-                mode='lines+markers',
-                name='Overall Rank',
-                line=dict(color='#FF6B6B', width=3),
-                marker=dict(size=10)
-            ))
-            fig_rank.add_hline(y=best_overall_rank, line_dash="dash", line_color="green", 
-                              annotation_text=f"Best Rank: {best_overall_rank}")
-            fig_rank.update_layout(title="Overall Rank Performance", yaxis=dict(autorange="reversed"), height=400)
-            st.plotly_chart(fig_rank, use_container_width=True)
             
             # ====================================================
             # DETAILED WEAKNESS INSIGHTS
@@ -509,3 +565,4 @@ if all_student_data and len(all_student_data) > 0:
             st.caption("✅ Dashboard Complete | Data Source: Master Sheet Excel | Rank Analysis: Lower number = Better performance")
 else:
     st.error("❌ No student data found in the file.")
+    
