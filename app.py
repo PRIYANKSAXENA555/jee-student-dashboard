@@ -9,12 +9,12 @@ warnings.filterwarnings('ignore')
 
 # Page configuration
 st.set_page_config(
-    page_title="Student Performance Dashboard",
+    page_title="JEE 27 Student Performance Dashboard",
     page_icon="📊",
     layout="wide"
 )
 
-st.title("📊 Student Performance Dashboard")
+st.title("📊 JEE 27 Student Performance Dashboard")
 st.markdown("---")
 
 # ============================================================
