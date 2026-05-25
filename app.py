@@ -9,12 +9,12 @@ warnings.filterwarnings('ignore')
 
 # Page configuration
 st.set_page_config(
-    page_title="JEE 27 Student Performance Dashboard",
+    page_title="Student Performance Dashboard",
     page_icon="📊",
     layout="wide"
 )
 
-st.title("📊 JEE 27 Student Performance Dashboard")
+st.title("📊 Student Performance Dashboard")
 st.markdown("---")
 
 # ============================================================
@@ -565,4 +565,3 @@ if all_student_data and len(all_student_data) > 0:
             st.caption("✅ Dashboard Complete | Data Source: Master Sheet Excel | Rank Analysis: Lower number = Better performance")
 else:
     st.error("❌ No student data found in the file.")
-    
